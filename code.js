@@ -94,7 +94,7 @@ function decideOutcome(i) {
 		// first row
 		op(sq[i+dim]) // search down
 	}
-	else if(i > sq.length - dim) {
+	else if(i >= sq.length - dim) {
 		// last row
 		op(sq[i-dim]) // search up
 	}

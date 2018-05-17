@@ -20,32 +20,6 @@ h1,h2,h3 {
     color:#0068ff;
 }
 
-#side {
-  padding-top: 60px;
-  height: 100%;
-  width: 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  background-color:#121212;
-  z-index: 1;
-  overflow-x: hidden;
-  opacity:0.9;
-  transition: 0.4s;
-}
-#side a {
-    padding: 8px 8px 8px 32px;
-    text-decoration: none;
-    font-size: 20px;
-    color:#0068ff;
-    display: block;
-    transition: 0.3s
-}
-
-#side a:hover, .offcanvas a:focus{
-    color: #f1f1f1;
-}
-
 #canvas {
   position: fixed;
   background-color:#000;
@@ -57,7 +31,7 @@ h1,h2,h3 {
   height: 100%;
 }
 
-#show {
+#pause {
     left: 10px;
     z-index: 2;
     position: fixed;
@@ -73,6 +47,6 @@ h1,h2,h3 {
     font-size: 16px;
     transition: 0.3s
 }
-#show:hover {
+#pause:hover {
     opacity:1.0;
 }

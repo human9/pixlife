@@ -1,24 +1,6 @@
-var hidden = true;
-document.getElementById('show').onclick = function(){
-	if(hidden) {
-        	document.getElementById('side').style.width = '200px';
-	} else {
-        	document.getElementById('side').style.width = '0';
-	}
-	hidden = !hidden;
-};
-document.getElementById('full').onclick = function(){
-	if(!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement)
-	{
-		var elem = document.getElementsByTagName('body')[0];
-		var requestFullScreen = elem.requestFullscreen || elem.msRequestFullscreen || elem.mozRequestFullScreen || elem.webkitRequestFullscreen;
-		requestFullScreen.call(elem);
-	}
-	else {
-		var exitFullScreen = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-		exitFullScreen.call(document);
-	}
-
+var pause = false;
+document.getElementById('pause').onclick = function(){
+	pause = !pause;
 };
 
 var canvas = document.getElementById('canvas');
@@ -54,13 +36,15 @@ function loop(t)
 
 	let newArray = []; newArray.length = dim*dim
 
-	for(var i = 0; i < sq.length; i++) {
-		newArray[i] = decideOutcome(i)
-		context.fillStyle = newArray[i] ? 'red' : 'blue'
-		context.fillRect((i % dim)*size+1, Math.floor(i/dim) * size+1, size-2, size-2);
-	}
+	if (!pause) {
+		for(var i = 0; i < sq.length; i++) {
+			newArray[i] = decideOutcome(i)
+			context.fillStyle = newArray[i] ? 'red' : 'blue'
+			context.fillRect((i % dim)*size+2, Math.floor(i/dim) * size, size-4, size-4);
+		}
 
-	sq = newArray;
+		sq = newArray;
+	}
 
 	window.requestAnimationFrame(loop);
 }
@@ -77,6 +61,7 @@ function decideOutcome(i) {
 		}
 	}
 
+	op(sq[i])
 	if(i % dim == 0) {
 		// first column
 		op(sq[i+1]) // search right

@@ -13,13 +13,13 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-var dim = 100; // 10x10
+var dim = 128
 var sq = []
 for(var i = 0; i < dim*dim; i++) {
 	if(i % dim < dim/2) {
-		sq.push(true)
+		sq.push(0)
 	} else {
-		sq.push(false)
+		sq.push(240)
 	}
 }
 
@@ -39,8 +39,8 @@ function loop(t)
 	if (!pause) {
 		for(var i = 0; i < sq.length; i++) {
 			newArray[i] = decideOutcome(i)
-			context.fillStyle = newArray[i] ? 'red' : 'blue'
-			context.fillRect((i % dim)*size+2, Math.floor(i/dim) * size, size-4, size-4);
+			context.fillStyle = 'hsl(' + newArray[i] + ', 90%, 60%)'
+			context.fillRect((i % dim)*size, Math.floor(i/dim) * size, size, size);
 		}
 
 		sq = newArray;
@@ -51,14 +51,11 @@ function loop(t)
 
 function decideOutcome(i) {
 
-	score = 0; // probability of true gaining control of this square
-	divisor = 0;
+
+	opts = []
 
 	function op(b) {
-		divisor += 1;
-		if(b) {
-			score += 1; 
-		}
+		opts.push(b)
 	}
 
 	op(sq[i])
@@ -88,7 +85,9 @@ function decideOutcome(i) {
 		op(sq[i-dim]) // search up
 	}
 
-	return (Math.random() < (score/divisor))
+	end =  opts[Math.floor(Math.random() * opts.length)]
+	return (end - sq[i]) * 0.99 + sq[i];
+
 }
-   
+
 window.requestAnimationFrame(loop);

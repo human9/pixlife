@@ -3,11 +3,19 @@
 <head>
 <link href="style.css" rel="stylesheet" />
 <meta charset=utf-8 />
-<title>COPTINET/VIZ</title>
+<title>pixlife</title>
 </head>
 <body>
 <canvas id="canvas"></canvas>
 <input type="button"  id="pause" value="pause">
+<div id="zone">
+	<input type="file" id="browse" style="display: none">
+	<div id="drop" onclick="document.getElementById('browse').click();">
+		<p>Drag image here or click to browse...</p>
+	</div>
+	<output id="list"></output>
+	<button id="parse">Import</button>
+</zone>
 </body>
 <script src="gl.js"></script>
 <script src="code.js"></script>

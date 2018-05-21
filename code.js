@@ -1,7 +1,45 @@
+var requestId;
+
 var pause = false;
 document.getElementById('pause').onclick = function(){
 	pause = !pause;
 };
+
+document.getElementById("drop").style.cursor = "pointer";
+
+var inputFile;
+function updateFile(file) {
+	if (typeof file != 'undefined') {
+		document.getElementById('list').innerHTML = '<strong>' + escape(file.name) + '</strong> [' + file.type + ', ' + file.size + ' bytes]';
+		document.getElementById("parse").style.visibility = "visible";
+		inputFile = file;
+	}
+}
+function handleFileSelect(e) {
+	e.stopPropagation();
+	e.preventDefault();
+	var files = e.dataTransfer.files;
+	updateFile(files[0]);
+}
+
+function handleBrowse(e) {
+	var files = e.target.files;
+	updateFile(files[0]);
+}
+
+document.getElementById('browse').addEventListener('change', handleBrowse, false);
+
+
+function handleDragOver(e) {
+	e.stopPropagation();
+	e.preventDefault();
+	e.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+}
+
+// Setup the dnd listeners.
+var dropZone = document.getElementById('drop');
+dropZone.addEventListener('dragover', handleDragOver, false);
+dropZone.addEventListener('drop', handleFileSelect, false);
 
 const canvas = document.querySelector("#canvas");
 //var context = canvas.getContext('2d');
@@ -46,7 +84,7 @@ function isPowerOf2(value) {
 }
 
 
-let startGL = function() {
+let startGL = function(img) {
 	// Initialize the GL context
 	const gl = canvas.getContext("webgl");
 
@@ -103,9 +141,8 @@ let startGL = function() {
 	];
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tex), gl.STATIC_DRAW);
 
-	const dim = 2048;
-	const tex0 = createTexture(gl, dim);
-	const tex1 = createTextureF(gl, dim);
+	const tex0 = createTexture(gl, img);
+	const tex1 = createTexture(gl, img);
 
 	const fb0 = gl.createFramebuffer();
 	gl.bindFramebuffer(gl.FRAMEBUFFER, fb0);
@@ -118,11 +155,13 @@ let startGL = function() {
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
+
 	var flipTex = false;
 
+	requestId = window.requestAnimationFrame(render);
 	function render(t) {
 
-		gl.viewport(0, 0, dim, dim);
+		gl.viewport(0, 0, img.width, img.height);
 
 		// swap which texture is being rendered to each frame
 		texture = flipTex ? tex0 : tex1;
@@ -130,11 +169,6 @@ let startGL = function() {
 		flipTex = !flipTex;
 		gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
 
-		// Set clear color to black, fully opaque
-		gl.clearColor(0.2, 0.2, 0.2, 1.0);
-		// Clear the color buffer with specified clear color
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		
 		{
 			const numComponents = 2;  // pull out 2 values per iteration
 			const type = gl.FLOAT;    // the data in the buffer is 32bit floats
@@ -168,7 +202,7 @@ let startGL = function() {
 
 		gl.useProgram(data.program);
 		gl.uniform1f(data.uniforms.enabled, true);
-		gl.uniform1f(data.uniforms.dim, dim);
+		gl.uniform2f(data.uniforms.dim, img.width, img.height);
 		gl.uniform2f(data.uniforms.rseed, Math.random(), Math.random());
 
 
@@ -185,6 +219,8 @@ let startGL = function() {
 			const offset = 0;
 			const vertexCount = 6;
 
+		   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 			gl.drawArrays(gl.TRIANGLES, offset, vertexCount);
 
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -192,122 +228,54 @@ let startGL = function() {
 			gl.uniformMatrix4fv(
 			  data.uniforms.projection,
 			  false,
-			  ortho(-1, 1, -1, 1, 1, -1) );
+			  identity);
+			
+			gl.clearColor(0.2, 0.2, 0.2, 1.0);
+			// Clear the color buffer with specified clear color
+			gl.clear(gl.COLOR_BUFFER_BIT);
+		
 
 			gl.viewport(0, 0, canvas.width, canvas.height);
+		   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 			gl.drawArrays(gl.TRIANGLES, offset, vertexCount);
 		}
 
 		
-		window.requestAnimationFrame(render);
+		requestId = window.requestAnimationFrame(render);
 	}
-function createTexture(gl, dim) {
-	const texture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, texture);
 
-	const blue = [20, 20, 199, 255];
-	const red = [199, 20, 20, 255]
-	var sq = []
-	for(var i = 0; i < dim*dim; i++) {
-		if(i % dim < dim/2) {
-			sq.push.apply(sq, red)
-		} else {
-			sq.push.apply(sq, blue)
+
+	function createTexture(gl, image) {
+		const texture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+		if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+		   // Yes, it's a power of 2. Generate mips.
+		   gl.generateMipmap(gl.TEXTURE_2D);
 		}
+	   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+		return texture;
 	}
-	const data = new Uint8Array(sq);  // opaque blue
-
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, dim, dim, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
-
-	  const image = new Image();
-	  image.onload = function() {
-	    gl.bindTexture(gl.TEXTURE_2D, texture);
-	    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
-	    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-	    // WebGL1 has different requirements for power of 2 images
-	    // vs non power of 2 images so check if the image is a
-	    // power of 2 in both dimensions.
-	    if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
-	       // Yes, it's a power of 2. Generate mips.
-	       gl.generateMipmap(gl.TEXTURE_2D);
-	    } else {
-	       // No, it's not a power of 2. Turn of mips and set
-	       // wrapping to clamp to edge
-	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	    }
-
-
-
-
-	  };
-	  image.src = "img.jpg";
-  
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-	return texture;
 }
-function createTextureF(gl, dim) {
-	const texture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, texture);
 
-	const blue = [20, 20, 199, 255];
-	const red = [199, 20, 20, 255]
-	var sq = []
-	for(var i = 0; i < dim*dim; i++) {
-		if(i % dim < dim/2) {
-			sq.push.apply(sq, red)
-		} else {
-			sq.push.apply(sq, blue)
-		}
+
+function loadImage() {
+	var img = new Image;
+	img.onload = function() {
+		window.cancelAnimationFrame(requestId);
+		startGL(img);
 	}
-	const data = new Uint8Array(sq);  // opaque blue
-
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, dim, dim, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
-
-	  const image = new Image();
-	  image.onload = function() {
-	    gl.bindTexture(gl.TEXTURE_2D, texture);
-	    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
-	    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-	    // WebGL1 has different requirements for power of 2 images
-	    // vs non power of 2 images so check if the image is a
-	    // power of 2 in both dimensions.
-	    if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
-	       // Yes, it's a power of 2. Generate mips.
-	       gl.generateMipmap(gl.TEXTURE_2D);
-	    } else {
-	       // No, it's not a power of 2. Turn of mips and set
-	       // wrapping to clamp to edge
-	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	    }
-
-	    window.requestAnimationFrame(render);
-
-
-	  };
-	  image.src = "img.jpg";
-  
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-	return texture;
-}
-	
+	img.src = URL.createObjectURL(inputFile);
 }
 
-
-startGL();
+document.getElementById('parse').onclick = loadImage;
 
 /*
 var dim = 128

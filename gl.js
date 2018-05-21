@@ -22,7 +22,7 @@ const vsSource = `
 const fsSource = `
 
 	varying highp vec2 texcoord_f;
-	uniform highp float dim;
+	uniform highp vec2 dim;
 	uniform highp vec2 rseed;
 	uniform sampler2D sampler;
 	uniform bool enabled;
@@ -71,7 +71,7 @@ const fsSource = `
 	}
 
 
-	ivec2 decideOutcome(ivec2 texel, highp float dim) {
+	ivec2 decideOutcome(ivec2 texel, highp vec2 dim) {
 
 		highp vec4 outcome = vec4(0., 0., 0., 0.);
 
@@ -97,7 +97,7 @@ const fsSource = `
 		}
 		else if(which == 2) {
 			// right
-			if(texel.x > int(dim)-2) {
+			if(texel.x > int(dim.x)-2) {
 				// left instead
 				t = ivec2(texel.x - 1, texel.y);
 			} else {
@@ -106,7 +106,7 @@ const fsSource = `
 		}
 		else if(which == 3) {
 			// down
-			if(texel.y > int(dim)-2) {
+			if(texel.y > int(dim.y)-2) {
 				// up instead
 				t = ivec2(texel.x, texel.y - 1);
 			} else {
@@ -132,7 +132,7 @@ const fsSource = `
 			ivec2 outcome = decideOutcome(texel, dim);
 
 
-			gl_FragColor = vec4(interpolate(texture2D(sampler, texcoord_f), texture2D(sampler, (vec2(outcome)+0.5)/dim), 0.999), 1.0);
+			gl_FragColor = vec4(interpolate(texture2D(sampler, texcoord_f), texture2D(sampler, (vec2(outcome)+0.5)/dim), 0.999), 0.0);
 		}
 		else {
 			gl_FragColor = texture2D(sampler, texcoord_f);

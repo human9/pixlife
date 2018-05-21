@@ -41,46 +41,44 @@ const fsSource = `
 
 	highp vec4 decideOutcome(ivec2 texel) {
 
-		highp vec4 outcome = vec4(rand(texcoord_f),0.,0.,0.);
+		highp vec4 outcome = vec4(0., 0., 0., 0.);
 
 		// u d l r
 		highp float r = rand(texcoord_f);
 
-		int n = 5;
-		if(texel.x < 1 || texel.x > int(dim)-2) {
-			n - 1;
-		}
-		if(texel.y < 1 || texel.y > int(dim)-2) {
-			n - 1;
-		}
-		
-		which = int(r * n);
+		int which = int(r * 5.0);
 
-		switch(which) {
-			case 0:
-				if(texel.x < 1) {
-
-				} else {
-					break;
-				}
-			case 1:
-				break;
-			case 2:
-				break;
+		if(which == 0) {
+			// center
+			outcome = texture2D(sampler, texcoord_f);
+		}
+		else if(which == 1) {
+			// up
+			if(texel.y < 1) {
+				// down instead
+			}
+			outcome = texture2D(sampler, vec2(texcoord_f.x, texcoord_f.y));
+		}
+		else if(which == 2) {
 
 		}
+		else if(which == 3) {
+
+		}
+		else if(which == 4) {
+
+		}
+
+
+
 		if(texel.x < 1) {
-			n - 1;
 		}
 		else if(texel.x > int(dim)-2) {
-			n - 1;
 		}
 		
 		if(texel.y < 1) {
-			n - 1;
 		}
 		else if(texel.y > int(dim)-2) {
-			n - 1;
 		}
 
 

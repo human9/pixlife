@@ -132,7 +132,7 @@ const fsSource = `
 			ivec2 outcome = decideOutcome(texel, dim);
 
 
-			gl_FragColor = vec4(interpolate(texture2D(sampler, texcoord_f), texture2D(sampler, (vec2(outcome)+0.5)/dim), 0.99), 1.0);
+			gl_FragColor = vec4(interpolate(texture2D(sampler, texcoord_f), texture2D(sampler, (vec2(outcome)+0.5)/dim), 0.999), 1.0);
 		}
 		else {
 			gl_FragColor = texture2D(sampler, texcoord_f);
@@ -213,28 +213,3 @@ function initBuffers(gl) {
 
 }
 
-function createTexture(gl, dim) {
-	const texture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, texture);
-
-	const blue = [2, 2, 255, 255];
-	const red = [255, 2, 2, 255]
-	var sq = []
-	for(var i = 0; i < dim*dim; i++) {
-		if(i % dim < dim/2) {
-			sq.push.apply(sq, red)
-		} else {
-			sq.push.apply(sq, blue)
-		}
-	}
-	const data = new Uint8Array(sq);  // opaque blue
-
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, dim, dim, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
-  
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-	return texture;
-}

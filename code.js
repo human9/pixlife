@@ -13,6 +13,39 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
+m00 = 0, m10 = 4, m20 = 8, m30 = 12, m01 = 1, m11 = 5, m21 = 9, m31 = 13, m02 = 2, m12 = 6,
+			m22 = 10, m32 = 14, m03 = 3, m13 = 7, m23 = 11, m33 = 15;
+
+function ortho(left, right, bottom, top, z_near, z_far) {
+
+	a = 2 / (right - left);
+	b = 2 / (top - bottom);
+	c = -2 / (z_far - z_near);
+	r = -(right + left) / (right - left);
+	s = -(top + bottom) / (top - bottom);
+	t = -(z_far + z_near) / (z_far - z_near);
+
+	m = 
+	[1, 0, 0, 0,
+	 0, 1, 0, 0,
+	 0, 0, 1, 0,
+	 0, 0, 0, 1];
+	m[m00] = a;
+	m[m11] = b;
+	m[m22] = c;
+	m[m30] = r;
+	m[m31] = s;
+	m[m32] = t;
+	m[m33] = 1;
+
+	return m;
+}
+
+function isPowerOf2(value) {
+  return (value & (value - 1)) == 0;
+}
+
+
 let startGL = function() {
 	// Initialize the GL context
 	const gl = canvas.getContext("webgl");
@@ -45,7 +78,7 @@ let startGL = function() {
 	 0, 1, 0, 0,
 	 0, 0, 1, 0,
 	 0, 0, 0, 1]
-
+	const mat = ortho(-1, 1, 1, -1, 1, -1);
 	const positionBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 	const positions = [
@@ -70,9 +103,9 @@ let startGL = function() {
 	];
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tex), gl.STATIC_DRAW);
 
-	const dim = 512;
+	const dim = 2048;
 	const tex0 = createTexture(gl, dim);
-	const tex1 = createTexture(gl, dim);
+	const tex1 = createTextureF(gl, dim);
 
 	const fb0 = gl.createFramebuffer();
 	gl.bindFramebuffer(gl.FRAMEBUFFER, fb0);
@@ -87,12 +120,9 @@ let startGL = function() {
 
 	var flipTex = false;
 
-	window.requestAnimationFrame(render);
-
 	function render(t) {
 
 		gl.viewport(0, 0, dim, dim);
-
 
 		// swap which texture is being rendered to each frame
 		texture = flipTex ? tex0 : tex1;
@@ -141,10 +171,6 @@ let startGL = function() {
 		gl.uniform1f(data.uniforms.dim, dim);
 		gl.uniform2f(data.uniforms.rseed, Math.random(), Math.random());
 
-		gl.uniformMatrix4fv(
-		  data.uniforms.projection,
-		  false,
-		  identity);
 
 		{
 			// Tell WebGL we want to affect texture unit 0
@@ -163,6 +189,10 @@ let startGL = function() {
 
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 			gl.uniform1f(data.uniforms.enabled, false);
+			gl.uniformMatrix4fv(
+			  data.uniforms.projection,
+			  false,
+			  ortho(-1, 1, -1, 1, 1, -1) );
 
 			gl.viewport(0, 0, canvas.width, canvas.height);
 			gl.drawArrays(gl.TRIANGLES, offset, vertexCount);
@@ -171,6 +201,108 @@ let startGL = function() {
 		
 		window.requestAnimationFrame(render);
 	}
+function createTexture(gl, dim) {
+	const texture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+
+	const blue = [20, 20, 199, 255];
+	const red = [199, 20, 20, 255]
+	var sq = []
+	for(var i = 0; i < dim*dim; i++) {
+		if(i % dim < dim/2) {
+			sq.push.apply(sq, red)
+		} else {
+			sq.push.apply(sq, blue)
+		}
+	}
+	const data = new Uint8Array(sq);  // opaque blue
+
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, dim, dim, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+
+	  const image = new Image();
+	  image.onload = function() {
+	    gl.bindTexture(gl.TEXTURE_2D, texture);
+	    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+	    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+	    // WebGL1 has different requirements for power of 2 images
+	    // vs non power of 2 images so check if the image is a
+	    // power of 2 in both dimensions.
+	    if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+	       // Yes, it's a power of 2. Generate mips.
+	       gl.generateMipmap(gl.TEXTURE_2D);
+	    } else {
+	       // No, it's not a power of 2. Turn of mips and set
+	       // wrapping to clamp to edge
+	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	    }
+
+
+
+
+	  };
+	  image.src = "img.jpg";
+  
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+	return texture;
+}
+function createTextureF(gl, dim) {
+	const texture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+
+	const blue = [20, 20, 199, 255];
+	const red = [199, 20, 20, 255]
+	var sq = []
+	for(var i = 0; i < dim*dim; i++) {
+		if(i % dim < dim/2) {
+			sq.push.apply(sq, red)
+		} else {
+			sq.push.apply(sq, blue)
+		}
+	}
+	const data = new Uint8Array(sq);  // opaque blue
+
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, dim, dim, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+
+	  const image = new Image();
+	  image.onload = function() {
+	    gl.bindTexture(gl.TEXTURE_2D, texture);
+	    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+	    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+	    // WebGL1 has different requirements for power of 2 images
+	    // vs non power of 2 images so check if the image is a
+	    // power of 2 in both dimensions.
+	    if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+	       // Yes, it's a power of 2. Generate mips.
+	       gl.generateMipmap(gl.TEXTURE_2D);
+	    } else {
+	       // No, it's not a power of 2. Turn of mips and set
+	       // wrapping to clamp to edge
+	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	    }
+
+	    window.requestAnimationFrame(render);
+
+
+	  };
+	  image.src = "img.jpg";
+  
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+	return texture;
+}
 	
 }
 

@@ -70,7 +70,7 @@ let startGL = function() {
 	];
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tex), gl.STATIC_DRAW);
 
-	const dim = 1024;
+	const dim = 512;
 	const tex0 = createTexture(gl, dim);
 	const tex1 = createTexture(gl, dim);
 

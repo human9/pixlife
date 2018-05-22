@@ -5,7 +5,7 @@
 
 // Vertex shader program
 
-const vsSource = `precision mediump float;
+const vsSource = `precision highp float;
 
 	attribute vec4 position;
 	attribute vec2 texcoord;
@@ -20,7 +20,7 @@ const vsSource = `precision mediump float;
 	}
 `;
 
-const fsSource = `precision mediump float;
+const fsSource = `precision highp float;
 
 	varying vec2 texcoord_f;
 	uniform vec2 dim;

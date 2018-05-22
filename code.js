@@ -207,7 +207,7 @@ let startGL = function(img) {
 
 		gl.useProgram(data.program);
 		gl.uniform1f(data.uniforms.enabled, true);
-		gl.uniform2f(data.uniforms.dim, img.width, img.height);
+		gl.uniform2f(data.uniforms.dim, img.width/2, img.height/2);
 		gl.uniform2f(data.uniforms.rseed, Math.random(), Math.random());
 
 

@@ -5,7 +5,8 @@
 
 // Vertex shader program
 
-const vsSource = `
+const vsSource = `precision highp float;
+
 	attribute vec4 position;
 	attribute vec2 texcoord;
 
@@ -19,7 +20,7 @@ const vsSource = `
 	}
 `;
 
-const fsSource = `
+const fsSource = `precision highp float;
 
 	varying highp vec2 texcoord_f;
 	uniform highp vec2 dim;
@@ -132,7 +133,7 @@ const fsSource = `
 			ivec2 outcome = decideOutcome(texel, dim);
 
 
-			gl_FragColor = vec4(interpolate(texture2D(sampler, texcoord_f), texture2D(sampler, (vec2(outcome)+0.5)/dim), 0.999), 0.0);
+			gl_FragColor = vec4(interpolate(texture2D(sampler, texcoord_f), texture2D(sampler, (vec2(outcome)+0.5)/dim), 0.99), 1.0);
 		}
 		else {
 			gl_FragColor = texture2D(sampler, texcoord_f);

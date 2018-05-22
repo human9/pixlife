@@ -5,14 +5,14 @@
 
 // Vertex shader program
 
-const vsSource = `precision highp float;
+const vsSource = `precision mediump float;
 
 	attribute vec4 position;
 	attribute vec2 texcoord;
 
 	uniform mat4 projection;
 
-	varying highp vec2 texcoord_f;
+	varying vec2 texcoord_f;
 
 	void main() {
 		texcoord_f = texcoord;
@@ -20,39 +20,39 @@ const vsSource = `precision highp float;
 	}
 `;
 
-const fsSource = `precision highp float;
+const fsSource = `precision mediump float;
 
-	varying highp vec2 texcoord_f;
-	uniform highp vec2 dim;
-	uniform highp vec2 rseed;
+	varying vec2 texcoord_f;
+	uniform vec2 dim;
+	uniform vec2 rseed;
 	uniform sampler2D sampler;
 	uniform bool enabled;
 
 
-	highp vec3 rgb2hsv(highp vec3 c)
+	vec3 rgb2hsv(vec3 c)
 	{
-	    highp vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-	    highp vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-	    highp vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+	    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+	    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+	    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
 
-	    highp float d = q.x - min(q.w, q.y);
-	    highp float e = 1.0e-10;
+	    float d = q.x - min(q.w, q.y);
+	    float e = 1.0e-10;
 	    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 	}
 
-	highp vec3 hsv2rgb(highp vec3 c)
+	vec3 hsv2rgb(vec3 c)
 	{
-	    highp vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-	    highp vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+	    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+	    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
 	    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 	}
 
 
-	highp vec3 interpolate(highp vec4 from, highp vec4 to, highp float amt) {
-		highp vec3 from_hsv = rgb2hsv(from.xyz);
-		highp vec3 to_hsv = rgb2hsv(to.xyz);
+	vec3 interpolate(vec4 from, vec4 to, float amt) {
+		vec3 from_hsv = rgb2hsv(from.xyz);
+		vec3 to_hsv = rgb2hsv(to.xyz);
 		
-		highp vec3 final;
+		vec3 final;
 		final.x = mix(from_hsv.x, to_hsv.x, amt);
 		final.y = mix(from_hsv.y, to_hsv.y, amt);
 		final.z = mix(from_hsv.z, to_hsv.z, amt);
@@ -60,24 +60,24 @@ const fsSource = `precision highp float;
 		return hsv2rgb(final);
 	}
 
-	highp float rand(vec2 co)
+	float rand(vec2 co)
 	{
 		co = co * rseed * dim * 10.;
-	    highp float a = 12.9898;
-	    highp float b = 78.233;
-	    highp float c = 43758.5453;
-	    highp float dt= dot(co.xy ,vec2(a,b));
-	    highp float sn= mod(dt,3.14);
+	    float a = 12.9898;
+	    float b = 78.233;
+	    float c = 43758.5453;
+	    float dt= dot(co.xy ,vec2(a,b));
+	    float sn= mod(dt,3.14);
 	    return fract(sin(sn) * c);
 	}
 
 
-	ivec2 decideOutcome(ivec2 texel, highp vec2 dim) {
+	ivec2 decideOutcome(ivec2 texel, vec2 dim) {
 
-		highp vec4 outcome = vec4(0., 0., 0., 0.);
+		vec4 outcome = vec4(0., 0., 0., 0.);
 
 		// u d l r
-		highp float r = rand(texcoord_f);
+		float r = rand(texcoord_f);
 
 		int which = int(r * 5.0);
 

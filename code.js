@@ -161,6 +161,11 @@ let startGL = function(img) {
 	requestId = window.requestAnimationFrame(render);
 	function render(t) {
 
+		if(pause) {
+			requestId = window.requestAnimationFrame(render);
+			return;
+		}
+
 		gl.viewport(0, 0, img.width, img.height);
 
 		// swap which texture is being rendered to each frame

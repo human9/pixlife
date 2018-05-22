@@ -133,7 +133,7 @@ const fsSource = `precision mediump float;
 			ivec2 outcome = decideOutcome(texel, dim);
 
 
-			gl_FragColor = vec4(interpolate(texture2D(sampler, texcoord_f), texture2D(sampler, (vec2(outcome)+0.5)/dim), 0.99), 1.0);
+			gl_FragColor = vec4(interpolate(texture2D(sampler, texcoord_f), texture2D(sampler, (vec2(outcome)+0.5)/dim), 0.999), 1.0);
 		}
 		else {
 			gl_FragColor = texture2D(sampler, texcoord_f);
